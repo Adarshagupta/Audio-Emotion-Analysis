@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Emotion Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Audio Emotion Analysis</h1>
+        <input type="file" id="audioFile" accept="audio/*">
+        <button id="uploadButton">Upload and Analyze</button>
+        <div id="results">
+            <h2>Detected Emotions</h2>
+            <ul id="emotionsList"></ul>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const uploadButton = document.getElementById('uploadButton');
+            const audioFile = document.getElementById('audioFile');
+            const emotionsList = document.getElementById('emotionsList');
+
+            uploadButton.addEventListener('click', () => {
+                const file = audioFile.files[0];
+                if (!file) {
+                    alert('Please select a file first.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    emotionsList.innerHTML = '';
+                    if (data && data.length > 0 && data[0].results && data[0].results.predictions) {
+                        const emotions = data[0].results.predictions[0].models.prosody.grouped_predictions[0].predictions[0].emotions;
+                        emotions.forEach(emotion => {
+                            const li = document.createElement('li');
+                            li.textContent = `${emotion.name}: ${emotion.score.toFixed(2)}`;
+                            emotionsList.appendChild(li);
+                        });
+                    } else {
+                        emotionsList.innerHTML = '<li>No emotions detected</li>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    emotionsList.innerHTML = '<li>Error processing audio</li>';
+                });
+            });
+        });
+    </script>
+</html>
